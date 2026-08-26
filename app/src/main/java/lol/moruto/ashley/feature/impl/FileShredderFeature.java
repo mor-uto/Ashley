@@ -36,7 +36,7 @@ public class FileShredderFeature extends Feature {
         pickerLauncher.launch(new String[]{"*/*"});
     }
 
-    private void shredFile(Uri uri) {
+    public void shredFile(Uri uri) {
         if (uri == null) return;
 
         DocumentFile file = DocumentFile.fromSingleUri(activity, uri);

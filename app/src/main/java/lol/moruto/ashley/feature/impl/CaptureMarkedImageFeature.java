@@ -20,7 +20,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -30,6 +33,7 @@ import java.util.Locale;
 import lol.moruto.ashley.MainActivity;
 import lol.moruto.ashley.R;
 import lol.moruto.ashley.feature.Feature;
+import lol.moruto.ashley.util.ImageCrypto;
 
 public class CaptureMarkedImageFeature extends Feature {
     private String currentPhotoPath;
@@ -56,15 +60,46 @@ public class CaptureMarkedImageFeature extends Feature {
     }
 
     private void handleCameraResult(int resultCode) {
-        if (resultCode != Activity.RESULT_OK || currentPhotoPath == null) return;
+        if (resultCode != Activity.RESULT_OK || currentPhotoPath == null)
+            return;
 
         Bitmap bitmap = BitmapFactory.decodeFile(currentPhotoPath);
 
-        if (bitmap == null) return;
+        if (bitmap == null)
+            return;
 
-        Uri uri = saveImageToGallery(addWatermark(bitmap, new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date())));
+        try {
+            Bitmap marked = addWatermark(
+                    bitmap,
+                    new SimpleDateFormat(
+                            "hh:mm a",
+                            Locale.getDefault()
+                    ).format(new Date())
+            );
 
-        if (uri != null) showShareDialog(uri);
+            File encrypted = saveEncryptedImage(marked);
+
+            new AlertDialog.Builder(activity)
+                    .setTitle("Photo Saved")
+                    .setMessage(
+                            "Encrypted and saved securely:\n" +
+                                    encrypted.getName()
+                    )
+                    .setPositiveButton("OK", null)
+                    .show();
+
+            // Delete the temporary camera JPEG
+            new File(currentPhotoPath).delete();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            Toast.makeText(
+                    activity,
+                    "Failed to encrypt photo.",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
     }
 
     private void launchCamera() {
@@ -103,30 +138,38 @@ public class CaptureMarkedImageFeature extends Feature {
         return result;
     }
 
-    private Uri saveImageToGallery(Bitmap bitmap) {
+    private File saveEncryptedImage(Bitmap bitmap) {
         try {
-            String filename = "IMG_" + System.currentTimeMillis() + ".jpg";
+            String name = "IMG_" + System.currentTimeMillis() + ".enc";
 
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Images.Media.DISPLAY_NAME, filename);
-            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Ashley");
+            File dir = new File(activity.getFilesDir(), "gallery");
 
-            Uri uri = activity.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            if (uri == null) return null;
+            if (!dir.exists()) dir.mkdirs();
 
-            try (OutputStream out = activity.getContentResolver().openOutputStream(uri)) {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out);
+            File file = new File(dir, name);
+
+            ByteArrayOutputStream jpeg = new ByteArrayOutputStream();
+
+            bitmap.compress(
+                    Bitmap.CompressFormat.JPEG,
+                    95,
+                    jpeg
+            );
+
+            byte[] encrypted = ImageCrypto.encrypt(jpeg.toByteArray());
+
+            try (FileOutputStream out =
+                         new FileOutputStream(file)) {
+
+                out.write(encrypted);
             }
 
-            Toast.makeText(activity, "Saved to gallery!", Toast.LENGTH_SHORT).show();
-            return uri;
-
+            return file;
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(activity, "Failed to save image", Toast.LENGTH_SHORT).show();
-            return null;
         }
+
+        return null;
     }
 
     private void showShareDialog(Uri uri) {

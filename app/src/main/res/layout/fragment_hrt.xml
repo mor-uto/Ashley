@@ -52,6 +52,15 @@
             android:text="171d on pills"
             android:alpha="0.55"/>
 
+        <TextView
+            android:id="@+id/injection_schedule"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Injection schedule"
+            android:alpha="0.55"
+            android:textAlignment="center"/>
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/blood_history_button"
             android:layout_width="wrap_content"

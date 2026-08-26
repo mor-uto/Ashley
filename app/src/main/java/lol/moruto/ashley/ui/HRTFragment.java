@@ -38,6 +38,7 @@ public class HRTFragment extends Fragment {
             JSONObject json = new JSONObject(readJson());
 
             LocalDate start = LocalDate.parse(json.getString("start_date"));
+            updateInjectionSchedule(v, json);
 
             ((TextView) v.findViewById(R.id.days_number)).setText(
                     String.valueOf(
@@ -84,6 +85,32 @@ public class HRTFragment extends Fragment {
                     "Failed to load HRT data",
                     Toast.LENGTH_LONG
             ).show();
+        }
+    }
+
+    private void updateInjectionSchedule(View v, JSONObject json) {
+        TextView schedule = v.findViewById(R.id.injection_schedule);
+
+        int frequency = json.optInt("injection_frequency_in_days", 0);
+        String firstDateString = json.optString("injection_frequency_firstdate", "");
+
+        if (frequency <= 0 || firstDateString.isEmpty()) {
+            schedule.setText("");
+            return;
+        }
+
+        LocalDate firstDate = LocalDate.parse(firstDateString);
+        LocalDate today = LocalDate.now();
+
+        long days = ChronoUnit.DAYS.between(firstDate, today);
+
+        long remainder = Math.floorMod(days, frequency);
+
+        if (remainder == 0) {
+            schedule.setText("Injection today");
+        } else {
+            long remaining = frequency - remainder;
+            schedule.setText(remaining + "d remaining");
         }
     }
 
@@ -235,9 +262,13 @@ public class HRTFragment extends Fragment {
         View card = v.findViewById(id);
 
         ((TextView) card.findViewById(R.id.card_title)).setText(title);
-
         TextView description = card.findViewById(R.id.card_description);
+
         description.setText(Html.fromHtml(body, Html.FROM_HTML_MODE_LEGACY));
+
+        description.setLineSpacing(12f, 1.0f);
+
+        description.setLineSpacing(8f, 1.0f);
         description.setMovementMethod(LinkMovementMethod.getInstance());
 
         ((TextView) card.findViewById(R.id.card_subtitle)).setText(date);

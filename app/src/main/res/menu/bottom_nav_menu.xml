@@ -11,4 +11,9 @@
         android:id="@+id/nav_hrt"
         android:icon="@drawable/syringe"
         android:title="HRT"/>
+
+    <item
+        android:id="@+id/nav_gallery"
+        android:icon="@drawable/camera"
+        android:title="Gallery"/>
 </menu>

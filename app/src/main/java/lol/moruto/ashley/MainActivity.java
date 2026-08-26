@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         if (!"dc61eab9a1be6375db2c8b9debdb5486912651d6fca004887fe54f4e8869f4eb".equals(sha256(Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID)))) {
-            Toast.makeText(this, "Wrong phone.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "You're not allowed to use this Application.", Toast.LENGTH_LONG).show();
             finish();
         }
 
@@ -49,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new HomeFragment();
             } else if (item.getItemId() == R.id.nav_hrt) {
                 fragment = new HRTFragment();
+            } else if (item.getItemId() == R.id.nav_gallery) {
+                fragment = new GalleryFragment();
             }
 
             loadFragment(fragment);

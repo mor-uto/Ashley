@@ -1,6 +1,9 @@
 {
   "start_date": "YYYY-MM-DD",
 
+  "injection_frequency_in_days": 5,
+  "injection_frequency_firstdate": "",
+
   "sections": {
     "blood_history": "Blood Test History",
     "regimen_history": "Regimen Changes History",
