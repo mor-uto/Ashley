@@ -68,21 +68,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
             android:orientation="vertical"
-            android:visibility="gone">
-
-            <include
-                android:id="@+id/blood_card_3"
-                layout="@layout/item_feature"/>
-
-            <include
-                android:id="@+id/blood_card_2"
-                layout="@layout/item_feature"/>
-
-            <include
-                android:id="@+id/blood_card_1"
-                layout="@layout/item_feature" />
-
-        </LinearLayout>
+            android:visibility="gone"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/regimen_history_button"

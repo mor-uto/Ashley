@@ -38,89 +38,90 @@ public class CryptoFeature extends Feature {
     public CryptoFeature(MainActivity activity) {
         super(activity);
         this.activity = activity;
+
+        hashFileLauncher = activity.registerForActivityResult(
+                        new ActivityResultContracts.StartActivityForResult(),
+                        result -> {
+
+                            if (result.getResultCode() != Activity.RESULT_OK) {
+                                return;
+                            }
+
+                            Intent data = result.getData();
+
+                            if (data == null || data.getData() == null) {
+                                return;
+                            }
+
+                            Uri uri = data.getData();
+
+                            try {
+                                String hash = CryptoUtil.hashFile(
+                                        activity,
+                                        uri,
+                                        "SHA-256"
+                                );
+
+                                showResult(
+                                        "File SHA-256",
+                                        hash
+                                );
+
+                            } catch (Exception e) {
+                                showResult(
+                                        "File Hash Error",
+                                        e.getMessage()
+                                );
+                            }
+                        }
+                );
+
+        encryptFileLauncher = activity.registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+
+                    if (result.getResultCode() != Activity.RESULT_OK) return;
+
+                    Intent data = result.getData();
+
+                    if (data == null || data.getData() == null) return;
+
+                    Uri uri = data.getData();
+
+                    EditText password = new EditText(activity);
+                    password.setHint("Password");
+                    password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+                    new MaterialAlertDialogBuilder(activity)
+                            .setTitle("Encrypt File")
+                            .setView(password)
+                            .setPositiveButton("Encrypt", (dialog, which) -> {
+
+                                try {
+
+                                    Uri output = CryptoUtil.encryptFile(
+                                            activity,
+                                            uri,
+                                            password.getText().toString()
+                                    );
+
+                                    showResult(
+                                            "File Encrypted",
+                                            output.toString()
+                                    );
+
+                                } catch (Exception e) {
+                                    showResult("Encryption Error", e.getMessage());
+                                }
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                }
+        );
     }
 
-    private final ActivityResultLauncher<Intent> hashFileLauncher =
-            activity.registerForActivityResult(
-                    new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-
-                        if (result.getResultCode() != Activity.RESULT_OK) {
-                            return;
-                        }
-
-                        Intent data = result.getData();
-
-                        if (data == null || data.getData() == null) {
-                            return;
-                        }
-
-                        Uri uri = data.getData();
-
-                        try {
-                            String hash = CryptoUtil.hashFile(
-                                    activity,
-                                    uri,
-                                    "SHA-256"
-                            );
-
-                            showResult(
-                                    "File SHA-256",
-                                    hash
-                            );
-
-                        } catch (Exception e) {
-                            showResult(
-                                    "File Hash Error",
-                                    e.getMessage()
-                            );
-                        }
-                    }
-            );
-
-    private final ActivityResultLauncher<Intent> encryptFileLauncher =
-            activity.registerForActivityResult(
-                    new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-
-                        if (result.getResultCode() != Activity.RESULT_OK) return;
-
-                        Intent data = result.getData();
-
-                        if (data == null || data.getData() == null) return;
-
-                        Uri uri = data.getData();
-
-                        EditText password = new EditText(activity);
-                        password.setHint("Password");
-                        password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-
-                        new MaterialAlertDialogBuilder(activity)
-                                .setTitle("Encrypt File")
-                                .setView(password)
-                                .setPositiveButton("Encrypt", (dialog, which) -> {
-
-                                    try {
-
-                                        Uri output = CryptoUtil.encryptFile(
-                                                activity,
-                                                uri,
-                                                password.getText().toString()
-                                        );
-
-                                        showResult(
-                                                "File Encrypted",
-                                                output.toString()
-                                        );
-
-                                    } catch (Exception e) {
-                                        showResult("Encryption Error", e.getMessage());
-                                    }
-                                })
-                                .setNegativeButton("Cancel", null)
-                                .show();
-                    }
-            );
+    private final ActivityResultLauncher<Intent> hashFileLauncher;
+    private final ActivityResultLauncher<Intent> encryptFileLauncher;
 
     private void addCategory(LinearLayout parent, String title, Tool... tools) {
         TextView header = new TextView(activity);
@@ -234,6 +235,10 @@ public class CryptoFeature extends Feature {
                 .setPositiveButton("Close", null)
                 .show();
     }
+
+    private void generateAesKey() {}
+
+    private void decryptFile() {}
 
     private void encryptFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -529,11 +534,6 @@ public class CryptoFeature extends Feature {
 
         hashFileLauncher.launch(intent);
     }
-
-
-    private void generateAesKey() {}
-
-    private void decryptFile() {}
 
     private void hashText() {
         EditText input = new EditText(activity);

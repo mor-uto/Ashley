@@ -1,5 +1,6 @@
 package lol.moruto.ashley.feature.impl;
 
+import android.app.AlertDialog;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.widget.Toast;
@@ -24,7 +25,10 @@ public class FileShredderFeature extends Feature {
     public FileShredderFeature(MainActivity activity) {
         super(activity);
 
-        pickerLauncher = activity.registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::shredFile);
+        pickerLauncher = activity.registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(),
+                this::shredFile
+        );
     }
 
     @Override
@@ -35,10 +39,33 @@ public class FileShredderFeature extends Feature {
     private void shredFile(Uri uri) {
         if (uri == null) return;
 
-        try (ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(uri, "rw")) {
+        DocumentFile file = DocumentFile.fromSingleUri(activity, uri);
+        String name = file.getName() != null ? file.getName() : "this file";
+
+        new AlertDialog.Builder(activity)
+                .setTitle("Shred file?")
+                .setMessage(
+                        "Are you sure you want to securely delete:\n\n" +
+                                name +
+                                "\n\nThis cannot be undone."
+                )
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Shred", (dialog, which) ->
+                        shredFileConfirmed(uri)
+                )
+                .show();
+    }
+
+    private void shredFileConfirmed(Uri uri) {
+        try (ParcelFileDescriptor pfd =
+                     activity.getContentResolver().openFileDescriptor(uri, "rw")) {
 
             if (pfd == null) {
-                Toast.makeText(activity, "Couldn't open file.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(
+                        activity,
+                        "Couldn't open file.",
+                        Toast.LENGTH_SHORT
+                ).show();
                 return;
             }
 
@@ -49,7 +76,9 @@ public class FileShredderFeature extends Feature {
             Random random = new Random();
 
             for (int pass = 0; pass < 7; pass++) {
-                try (FileOutputStream out = new FileOutputStream(pfd.getFileDescriptor())) {
+                try (FileOutputStream out =
+                             new FileOutputStream(pfd.getFileDescriptor())) {
+
                     switch (pass) {
                         case 0:
                             Arrays.fill(buffer, (byte) 0x00);
@@ -69,13 +98,13 @@ public class FileShredderFeature extends Feature {
                             break;
                         case 5:
                             random.nextBytes(buffer);
-                            for (int i = 0; i < buffer.length; i++) {
+                            for (int i = 0; i < buffer.length; i++)
                                 buffer[i] = (byte) ~buffer[i];
-                            }
                             break;
                     }
 
                     long remaining = size;
+
                     while (remaining > 0) {
                         int len = (int) Math.min(buffer.length, remaining);
                         out.write(buffer, 0, len);
@@ -86,13 +115,27 @@ public class FileShredderFeature extends Feature {
                 }
             }
 
-            DocumentFile file = DocumentFile.fromSingleUri(activity, uri);
+            Toast.makeText(
+                    activity,
+                    fileDeleted(uri),
+                    Toast.LENGTH_LONG
+            ).show();
 
-            Toast.makeText(activity, file.delete() ? "Shredded (best effort) + deleted" : "Shredded but delete failed", Toast.LENGTH_LONG).show();
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(activity, "Failed to shred file.", Toast.LENGTH_LONG).show();
+
+            Toast.makeText(
+                    activity,
+                    "Failed to shred file.",
+                    Toast.LENGTH_LONG
+            ).show();
         }
+    }
+
+    private String fileDeleted(Uri uri) {
+        DocumentFile file = DocumentFile.fromSingleUri(activity, uri);
+
+        return file.delete() ? "Shredded (best effort) + deleted" : "Shredded but delete failed";
     }
 
     @Override
