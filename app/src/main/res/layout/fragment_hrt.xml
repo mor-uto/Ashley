@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/root_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:src="@drawable/syringe"
+            android:contentDescription="@null"/>
+
+        <TextView
+            android:id="@+id/days_number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:textSize="64sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Days on Estrogen"
+            android:textSize="20sp"
+            android:alpha="0.7"/>
+
+        <TextView
+            android:id="@+id/start_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Started Jan 17, 2026"
+            android:alpha="0.55"/>
+
+        <TextView
+            android:id="@+id/pills_counter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="171d on pills"
+            android:alpha="0.55"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/blood_history_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Blood Test History"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/syringe"
+            app:iconGravity="textStart"/>
+
+        <LinearLayout
+            android:id="@+id/blood_history_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <include
+                android:id="@+id/blood_card_3"
+                layout="@layout/item_feature"/>
+
+            <include
+                android:id="@+id/blood_card_2"
+                layout="@layout/item_feature"/>
+
+            <include
+                android:id="@+id/blood_card_1"
+                layout="@layout/item_feature" />
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/regimen_history_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Regimen Changes History"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/clipboard"
+            app:iconGravity="textStart"/>
+
+        <LinearLayout
+            android:id="@+id/regimen_history_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <include
+                android:id="@+id/regimen_history_card"
+                layout="@layout/item_feature"/>
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/trans_resources_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Trans Resources"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/book"
+            app:iconGravity="textStart"/>
+
+        <LinearLayout
+            android:id="@+id/trans_resources_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <include
+                android:id="@+id/trans_resources_card"
+                layout="@layout/item_feature"/>
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/trans_timeline_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="Trans Timeline"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/picture"
+            app:iconGravity="textStart"/>
+
+        <LinearLayout
+            android:id="@+id/trans_timeline_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <include
+                android:id="@+id/trans_timeline_card"
+                layout="@layout/item_feature"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
