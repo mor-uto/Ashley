@@ -80,7 +80,6 @@ public class HttpUtil {
         }
     }
 
-
     public static class HttpResponse {
 
         private final int code;
