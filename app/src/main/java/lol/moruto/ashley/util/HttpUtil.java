@@ -23,7 +23,7 @@ public class HttpUtil {
         }
 
         try (Response response = CLIENT.newCall(builder.build()).execute()) {
-            return new HttpResponse(response.code(), response.message(), response.body() != null ? response.body().string() : "");
+            return new HttpResponse(response.code(), response.message(), response.body().string());
         }
     }
 

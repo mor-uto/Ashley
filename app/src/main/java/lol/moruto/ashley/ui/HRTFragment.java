@@ -1,5 +1,9 @@
 package lol.moruto.ashley.ui;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
@@ -27,6 +31,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 import lol.moruto.ashley.R;
@@ -58,33 +63,49 @@ public class HRTFragment extends Fragment {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-
-            Toast.makeText(requireContext(), "Failed to load cached HRT data", Toast.LENGTH_LONG).show();
+            Toast.makeText(requireContext(), "Failed to load cached HRT data: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
         new Thread(() -> {
+
+            if (!hasInternetConnection()) {
+                requireActivity().runOnUiThread(() ->
+                        Toast.makeText(
+                                requireContext(),
+                                "No internet connection",
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
+                return;
+            }
+
             try {
                 updateFromServer();
 
-                if (isAdded()) {
-                    requireActivity().runOnUiThread(() -> {
-                        try {
-                            String jsonText = readCachedJson();
-
-                            if (jsonText != null) {
-                                loadHRT(v, new JSONObject(jsonText));
-                                showLastUpdated(v);
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                if (!isAdded()) {
+                    return;
                 }
 
-            } catch (Exception e) {
-                e.printStackTrace();
+                requireActivity().runOnUiThread(() -> {
+                    try {
+                        String jsonText = readCachedJson();
 
+                        if (jsonText != null) {
+                            loadHRT(v, new JSONObject(jsonText));
+                            showLastUpdated(v);
+                        }
+
+                    } catch (Exception e) {
+                        if (isAdded()) {
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Failed to load updated HRT data",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        }
+                    }
+                });
+            } catch (Exception e) {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() ->
                             Toast.makeText(
@@ -98,8 +119,41 @@ public class HRTFragment extends Fragment {
         }).start();
     }
 
+    private boolean hasInternetConnection() {
+        ConnectivityManager cm =
+                (ConnectivityManager) requireContext()
+                        .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (cm == null) {
+            return false;
+        }
+
+        Network network = cm.getActiveNetwork();
+
+        if (network == null) {
+            return false;
+        }
+
+        NetworkCapabilities capabilities =
+                cm.getNetworkCapabilities(network);
+
+        if (capabilities == null) {
+            return false;
+        }
+
+        return capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+        ) && capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED
+        );
+    }
+
+    private LocalDate parseDate(String date) {
+        return LocalDate.parse(date, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+    }
+
     private void loadHRT(View v, JSONObject json) throws Exception {
-        LocalDate start = LocalDate.parse(json.getString("start_date"));
+        LocalDate start = parseDate(json.getString("start_date"));
 
         updateInjectionSchedule(v, json);
 
@@ -127,7 +181,7 @@ public class HRTFragment extends Fragment {
             return;
         }
 
-        LocalDate firstDate = LocalDate.parse(firstDateString);
+        LocalDate firstDate = parseDate(firstDateString);
         LocalDate today = LocalDate.now();
 
         long days = ChronoUnit.DAYS.between(firstDate, today);
@@ -144,30 +198,88 @@ public class HRTFragment extends Fragment {
 
     private void loadRegimen(View v, JSONObject json) throws Exception {
         JSONObject regimen = json.getJSONObject("regimen_history");
-        StringBuilder body = new StringBuilder();
-
         JSONArray entries = regimen.getJSONArray("entries");
 
-        for (int i = 0; i < entries.length(); i++) {
+        StringBuilder body = new StringBuilder();
 
+        for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.getJSONObject(i);
 
-            String date = entry.getString("date");
-
-            String text = entry.getString("text");
+            String date = entry.optString("date", "");
+            String text = entry.optString("text", "");
 
             if (!date.isEmpty()) {
-                body.append(date).append(": ");
+                body.append("<b>")
+                        .append(date)
+                        .append("</b>");
             }
 
-            body.append(text);
+            if (!text.isEmpty()) {
+                if (!date.isEmpty()) {
+                    body.append("<br><br>");
+                }
+
+                body.append(text);
+            }
 
             if (i < entries.length() - 1) {
-                body.append("\n\n");
+                body.append("<br><br><br>");
             }
         }
 
-        card(v, R.id.regimen_history_card, regimen.getString("title"), body.toString(), "");
+        card(
+                v,
+                R.id.regimen_history_card,
+                regimen.getString("title"),
+                body.toString(),
+                ""
+        );
+    }
+
+
+    private void loadResources(View v, JSONObject json) throws Exception {
+        JSONObject resources = json.getJSONObject("trans_resources");
+        JSONArray entries = resources.getJSONArray("entries");
+
+        StringBuilder body = new StringBuilder();
+
+        for (int i = 0; i < entries.length(); i++) {
+            JSONObject entry = entries.getJSONObject(i);
+
+            String name = entry.optString("name", "");
+            String description = entry.optString("description", "");
+            String url = entry.optString("url", "");
+
+            if (!name.isEmpty()) {
+                body.append("<b>")
+                        .append(name)
+                        .append("</b>");
+            }
+
+            if (!description.isEmpty()) {
+                body.append("<br><br>")
+                        .append(description);
+            }
+
+            if (!url.isEmpty()) {
+                body.append("<br><br>")
+                        .append("<a href=\"")
+                        .append(url)
+                        .append("\">Open Resource</a>");
+            }
+
+            if (i < entries.length() - 1) {
+                body.append("<br><br><br>");
+            }
+        }
+
+        card(
+                v,
+                R.id.trans_resources_card,
+                resources.getString("title"),
+                body.toString(),
+                ""
+        );
     }
 
     private void loadBloodTests(View v, JSONObject json) throws Exception {
@@ -210,31 +322,6 @@ public class HRTFragment extends Fragment {
         }
     }
 
-    private void loadResources(View v, JSONObject json) throws Exception {
-        JSONObject resources = json.getJSONObject("trans_resources");
-        StringBuilder body = new StringBuilder();
-
-        JSONArray entries = resources.getJSONArray("entries");
-
-        for (int i = 0; i < entries.length(); i++) {
-            JSONObject entry = entries.getJSONObject(i);
-
-            body.append("<a href=\"")
-                    .append(entry.getString("url"))
-                    .append("\">")
-                    .append(entry.getString("name"))
-                    .append("</a>");
-
-            String description = entry.optString("description");
-
-            if (!description.isEmpty()) body.append(" - ").append(description);
-
-            if (i < entries.length() - 1) body.append("\n\n");
-        }
-
-        card(v, R.id.trans_resources_card, resources.getString("title"), body.toString(), "");
-    }
-
     private void section(View v,int buttonId, int containerId, String title) {
         MaterialButton button = v.findViewById(buttonId);
         View container = v.findViewById(containerId);
@@ -252,11 +339,16 @@ public class HRTFragment extends Fragment {
         View card = v.findViewById(id);
 
         ((TextView) card.findViewById(R.id.card_title)).setText(title);
-        TextView description = card.findViewById(R.id.card_description);
-        description.setText(Html.fromHtml(body, Html.FROM_HTML_MODE_LEGACY));
-        description.setLineSpacing(8f, 1.0f);
 
+        TextView description = card.findViewById(R.id.card_description);
+
+        description.setText(
+                Html.fromHtml(body, Html.FROM_HTML_MODE_LEGACY)
+        );
+
+        description.setLineSpacing(8f, 1.0f);
         description.setMovementMethod(LinkMovementMethod.getInstance());
+
         ((TextView) card.findViewById(R.id.card_subtitle)).setText(date);
     }
 
@@ -289,18 +381,25 @@ public class HRTFragment extends Fragment {
     }
 
     private void updateFromServer() throws Exception {
-
         byte[] downloaded = downloadFile();
 
-        String newHash = sha256(downloaded);
+        String downloadedJson = new String(downloaded, StandardCharsets.UTF_8);
 
-        String oldHash = readCachedHash();
+        JSONObject json = new JSONObject(downloadedJson);
 
-        if (newHash.equalsIgnoreCase(oldHash)) {
-            return;
+        parseDate(json.getString("start_date"));
+
+        int frequency = json.optInt("injection_frequency_in_days", 0);
+        String firstDate = json.optString("injection_frequency_firstdate", "");
+
+        if (frequency > 0 && !firstDate.isEmpty()) {
+            parseDate(firstDate);
         }
 
-        String downloadedJson = new String(downloaded, StandardCharsets.UTF_8);
+        String newHash = sha256(downloaded);
+        String oldHash = readCachedHash();
+
+        if (newHash.equalsIgnoreCase(oldHash)) return;
 
         File jsonFile = new File(requireContext().getFilesDir(), CACHE_FILE);
 
@@ -309,16 +408,14 @@ public class HRTFragment extends Fragment {
             out.flush();
         }
 
-        File hashFile =
-                new File(requireContext().getFilesDir(), HASH_FILE);
+        File hashFile = new File(requireContext().getFilesDir(), HASH_FILE);
 
         try (FileOutputStream out = new FileOutputStream(hashFile)) {
             out.write(newHash.getBytes(StandardCharsets.UTF_8));
             out.flush();
         }
 
-        File updatedFile =
-                new File(requireContext().getFilesDir(), LAST_UPDATED_FILE);
+        File updatedFile = new File(requireContext().getFilesDir(), LAST_UPDATED_FILE);
 
         try (FileOutputStream out = new FileOutputStream(updatedFile)) {
             out.write(
@@ -330,10 +427,7 @@ public class HRTFragment extends Fragment {
     }
 
     private byte[] downloadFile() throws Exception {
-
-        URL url = new URL(HRT_URL);
-
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(HRT_URL).openConnection();
 
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(10000);
@@ -362,9 +456,7 @@ public class HRTFragment extends Fragment {
 
             connection.disconnect();
 
-            throw new Exception(
-                    "HTTP " + responseCode + ": " + error
-            );
+            throw new Exception("HTTP " + responseCode + ": " + error);
         }
 
         byte[] data = readAll(in);
@@ -376,18 +468,14 @@ public class HRTFragment extends Fragment {
     }
 
     public static String sha256(byte[] data) throws Exception {
-
-        MessageDigest digest =
-                MessageDigest.getInstance("SHA-256");
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
         byte[] hash = digest.digest(data);
 
         StringBuilder result = new StringBuilder();
 
         for (byte b : hash) {
-            result.append(
-                    String.format("%02x", b & 0xff)
-            );
+            result.append(String.format("%02x", b & 0xff));
         }
 
         return result.toString();
@@ -431,7 +519,6 @@ public class HRTFragment extends Fragment {
             java.text.DateFormat format = java.text.DateFormat.getDateTimeInstance();
 
             lastUpdated.setText("Last updated: " + format.format(new java.util.Date(timestamp)));
-
         } catch (Exception e) {
             lastUpdated.setText("Last updated: Unknown");
         }
